@@ -1,3 +1,0 @@
-/extra/chivier-projects/cudatest/00-devices/build/CMakeFiles/rebuild_cache.dir
-/extra/chivier-projects/cudatest/00-devices/build/CMakeFiles/edit_cache.dir
-/extra/chivier-projects/cudatest/00-devices/build/CMakeFiles/hello.dir
