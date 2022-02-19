@@ -2,11 +2,9 @@
 #include <cuda_runtime.h>
 
 __device__ void gpu_hello() {
-    printf("gpu hello!\n");
-}
-
-__host__ void cpu_hello() {
-    printf("cpu hello!\n");
+    #ifdef __CUDA_ARCH__
+        printf("%d\n", __CUDA_ARCH__);
+    #endif
 }
 
 __global__ void kernel() {
@@ -14,9 +12,8 @@ __global__ void kernel() {
 }
 
 int main() {
-    kernel<<<1, 2>>>();
+    kernel<<<1, 1>>>();
     cudaDeviceSynchronize();
-    cpu_hello();
     return 0;
 }
 
