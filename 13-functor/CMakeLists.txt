@@ -7,6 +7,6 @@ set(CMAKE_CUDA_ARCHITECTURES 61)
 project(devices LANGUAGES CXX CUDA)
 
 add_executable(hello hello.cu)
-target_include_directories(hello PUBLIC ../Common)
+target_include_directories(hello PUBLIC ../common)
 target_compile_options(hello PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:--extended-lambda>)
 

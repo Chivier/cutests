@@ -3,8 +3,8 @@
 
 using namespace std;
 __global__ void kernel() {
-    printf("Thread %d of %d\n",
-           blockIdx.x * blockDim.x + threadIdx.x, blockDim.x * gridDim.x);
+    printf("Thread %d of [%d * %d]\n",
+           blockIdx.x * blockDim.x + threadIdx.x, blockDim.x, gridDim.x);
 }
 
 int main() {

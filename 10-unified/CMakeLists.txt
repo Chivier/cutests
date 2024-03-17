@@ -7,5 +7,5 @@ set(CMAKE_CUDA_ARCHITECTURES 61)
 project(devices LANGUAGES CXX CUDA)
 
 add_executable(hello hello.cu)
-target_include_directories(hello PUBLIC ../Common)
+target_include_directories(hello PUBLIC ../common)
 

@@ -10,6 +10,7 @@ __global__ void kernel() {
 }
 
 int main() {
+    cudaDeviceSynchronize();
     kernel<<<dim3(2, 1, 1), dim3(2, 2, 2)>>>();
     cudaDeviceSynchronize();
     return 0;
