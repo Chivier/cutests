@@ -1,29 +1,26 @@
-#include <iostream>
+// Managed (unified) memory: one pointer valid on host and device. Prints 55.
+#include <cstdio>
 #include <cuda_runtime.h>
 #include "helper_cuda.h"
 
 __global__ void kernel(int *arr) {
     arr[0] = 0;
-    int index = 1;
-    while (arr[index] != 0) {
-        arr[0] += arr[index];
-        index++;
-    }
+    for (int i = 1; arr[i] != 0; ++i)
+        arr[0] += arr[i];
 }
 
 int main() {
     int *a;
     checkCudaErrors(cudaMallocManaged(&a, sizeof(int) * 12));
-    int index = 1;
-    for (index = 1; index <= 10; ++index) {
-        a[index] = index;
-    }
+    for (int i = 1; i <= 10; ++i)
+        a[i] = i;
+    a[11] = 0;   // cudaMallocManaged does not zero memory; the kernel loop stops at 0
 
     kernel<<<1, 1>>>(a);
-    
-    checkCudaErrors(cudaDeviceSynchronize());
+    checkCudaErrors(cudaGetLastError());
+    checkCudaErrors(cudaDeviceSynchronize());   // no implicit copy: wait before the host reads
     printf("%d\n", a[0]);
-    cudaFree(a);
+
+    checkCudaErrors(cudaFree(a));
     return 0;
 }
-

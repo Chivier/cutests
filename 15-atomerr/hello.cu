@@ -1,4 +1,8 @@
+// A data race: every thread does sum += x on one __device__ variable.
+// sum += x is load, add, store; threads interleave and overwrite each other, so the GPU
+// result is wrong and changes from run to run. 16-atomfix and 17-customatom fix it.
 #include <cstdio>
+#include <cmath>
 #include <cuda_runtime.h>
 #include "helper_cuda.h"
 
@@ -15,33 +19,29 @@ __global__ void kernel(int n, Func func) {
 int main() {
     int n = 65536;
     int *arr;
-    float result = 0;
-
-    cudaMallocManaged(&arr, n * sizeof(int));
+    checkCudaErrors(cudaMallocManaged(&arr, n * sizeof(int)));
 
     int block_dim = 128;
-    int grid_dim = (n - 1) / block_dim;
+    int grid_dim = (n + block_dim - 1) / block_dim;
     kernel<<<grid_dim, block_dim>>>(n, [=] __device__ (int i) {
         arr[i] = i;
     });
-    
-    
     kernel<<<grid_dim, block_dim>>>(n, [=] __device__ (int i) {
-        sum += sinf(arr[i]);
+        sum += sinf(arr[i]);   // race!
     });
+    checkCudaErrors(cudaGetLastError());
 
-    cudaMemcpyFromSymbol(&result, sum, sizeof(float), 0, cudaMemcpyDeviceToHost);
-    checkCudaErrors(cudaDeviceSynchronize());
-    
-    printf("%f\n", result);
+    // A __device__ variable has a device address: read it with cudaMemcpyFromSymbol
+    // (it waits for the kernels, like cudaMemcpy).
+    float result = 0;
+    checkCudaErrors(cudaMemcpyFromSymbol(&result, sum, sizeof(float)));
+    printf("GPU %f\n", result);
 
-    // Compare
-    result = 0;
-    for(int index = 0; index < n; ++index) {
-        result += sinf(index);
-    }
-    printf("%f", result);
+    double reference = 0;
+    for (int i = 0; i < n; ++i)
+        reference += sinf(i);
+    printf("CPU %f\n", reference);
 
-    cudaFree(arr);
+    checkCudaErrors(cudaFree(arr));
     return 0;
 }

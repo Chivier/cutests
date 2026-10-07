@@ -1,4 +1,7 @@
+// The fix for 15-atomerr: atomicAdd does the read-modify-write in one step.
+// The GPU result now differs from the CPU reference only by floating-point summation order.
 #include <cstdio>
+#include <cmath>
 #include <cuda_runtime.h>
 #include "helper_cuda.h"
 
@@ -15,33 +18,27 @@ __global__ void kernel(int n, Func func) {
 int main() {
     int n = 65536;
     int *arr;
-    float result = 0;
-
-    cudaMallocManaged(&arr, n * sizeof(int));
+    checkCudaErrors(cudaMallocManaged(&arr, n * sizeof(int)));
 
     int block_dim = 128;
-    int grid_dim = (n - 1) / block_dim;
+    int grid_dim = (n + block_dim - 1) / block_dim;
     kernel<<<grid_dim, block_dim>>>(n, [=] __device__ (int i) {
         arr[i] = i;
     });
-    
-    
     kernel<<<grid_dim, block_dim>>>(n, [=] __device__ (int i) {
         atomicAdd(&sum, sinf(arr[i]));
     });
+    checkCudaErrors(cudaGetLastError());
 
-    cudaMemcpyFromSymbol(&result, sum, sizeof(float), 0, cudaMemcpyDeviceToHost);
-    checkCudaErrors(cudaDeviceSynchronize());
-    
-    printf("%f\n", result);
+    float result = 0;
+    checkCudaErrors(cudaMemcpyFromSymbol(&result, sum, sizeof(float)));
+    printf("GPU %f\n", result);
 
-    // Compare
-    result = 0;
-    for(int index = 0; index < n; ++index) {
-        result += sinf(index);
-    }
-    printf("%f\n", result);
+    double reference = 0;
+    for (int i = 0; i < n; ++i)
+        reference += sinf(i);
+    printf("CPU %f\n", reference);
 
-    cudaFree(arr);
+    checkCudaErrors(cudaFree(arr));
     return 0;
 }

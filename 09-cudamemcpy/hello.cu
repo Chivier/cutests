@@ -1,34 +1,31 @@
-#include <iostream>
+// The fix for 06/08: copy the data to device memory, run, copy the result back. Prints 55.
+#include <cstdio>
+#include <cstdlib>
 #include <cuda_runtime.h>
 #include "helper_cuda.h"
 
 __global__ void kernel(int *arr) {
     arr[0] = 0;
-    int index = 1;
-    while (arr[index] != 0) {
-        arr[0] += arr[index];
-        index++;
-    }
+    for (int i = 1; arr[i] != 0; ++i)
+        arr[0] += arr[i];
 }
 
 int main() {
-    int *a;
-    a = (int *)malloc(sizeof(int) * 12);
-    int index = 1;
-    for (index = 1; index <= 10; ++index) {
-        a[index] = index;
-    }
+    size_t bytes = 12 * sizeof(int);
+    int *a = (int *)calloc(12, sizeof(int));   // a[11] == 0 ends the kernel loop
+    for (int i = 1; i <= 10; ++i)
+        a[i] = i;
 
     int *cuda_a;
-    cudaMalloc(&cuda_a, sizeof(int) * 12);
-    cudaMemcpy(cuda_a, a, sizeof(int) * 12, cudaMemcpyHostToDevice);
+    checkCudaErrors(cudaMalloc(&cuda_a, bytes));
+    checkCudaErrors(cudaMemcpy(cuda_a, a, bytes, cudaMemcpyHostToDevice));
     kernel<<<1, 1>>>(cuda_a);
-    cudaMemcpy(a, cuda_a, sizeof(int) * 12, cudaMemcpyDeviceToHost);
-
-    checkCudaErrors(cudaDeviceSynchronize());
+    checkCudaErrors(cudaGetLastError());
+    // cudaMemcpy waits for the kernel (same default stream): no cudaDeviceSynchronize needed.
+    checkCudaErrors(cudaMemcpy(a, cuda_a, bytes, cudaMemcpyDeviceToHost));
     printf("%d\n", a[0]);
+
     free(a);
-    cudaFree(cuda_a);
+    checkCudaErrors(cudaFree(cuda_a));
     return 0;
 }
-

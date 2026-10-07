@@ -9,6 +9,9 @@ set(MODERNGPU_VERSION_PATCH 0)
 
 set(MODERNGPU_VERSION "${MODERNGPU_VERSION_MAJOR}.${MODERNGPU_VERSION_MINOR}.${MODERNGPU_VERSION_PATCH}")
 
+# cutests: same GPU-target default as the other examples (native on CMake >= 3.24).
+include(${CMAKE_CURRENT_LIST_DIR}/../cmake/cutests.cmake)
+
 project(MODERNGPU
     VERSION ${MODERNGPU_VERSION}
     LANGUAGES CXX CUDA
@@ -50,7 +53,8 @@ set_target_properties(MODERNGPU
         CUDA_EXTENSIONS OFF
         CUDA_RESOLVE_DEVICE_SYMBOLS ON
         CUDA_SEPARABLE_COMPILATION ON
-        CUDA_ARCHITECTURES 60 61 70 75 80 # Set required architecture.
+        # cutests: was "60 61 70 75 80"; CUDA 13 no longer compiles for sm_60-sm_72.
+        CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}"
         # CUDA_PTX_COMPILATION ON # Can only be applied to OBJ.
 )
 
